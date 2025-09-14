@@ -13,8 +13,9 @@ Description  : %HERE%
 """
 
 import argparse, logging, os, sys
-import json, requests, yaml
+import json, requests, yaml, ssl
 from pathlib import Path
+from UMRtools import UMRrouter
 
 def exc_hndlr(etype, value, tb):
     logger.critical(
@@ -189,20 +190,29 @@ def main():
     logger.debug(args)
     configFile = Path(args.config)
 
+    global pollingTargets
+    pollingTargets = []
+
     try:
         configFile_abs_path = configFile.resolve(strict=True)
     except FileNotFoundError:
-        logger.warning('Config file '+args.config+' not found, loading default values.')
+        logger.error('Config file '+args.config+' not found, exiting.')
+        exit()
     else:
         logger.info('Config file '+args.config+' found, loading values.')
         with open(configFile,"r") as config_file:
             configuration=yaml.load_all(config_file,Loader=yaml.SafeLoader)
             for data in configuration:
-                global pollingTargets
-                pollingTargets = data['routers']
-                logger.info('Polling Targets Loaded: ')
-                for router in pollingTargets:
-                    logger.info(router)
+                entries = data['routers']
+                for entry in entries:
+                    pollingTargets.append(UMRrouter(entry['name'],entry['ipAddr'],entry['password'],entry['freq'],entry['SSLVerify']))
+
+    #while 1:
+    for target in pollingTargets:
+        if target.authCode == 0:
+            logger.info('Target '+target.name+' on '+target.addr+' unauthorised, logging in.')
+            target.connect()
+
 
 if __name__ == "__main__":
     args, unknown_args = parse_args()
