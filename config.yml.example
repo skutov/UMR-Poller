@@ -4,11 +4,11 @@
 #   - Name: Three         - Nme of target (for logging)
 #     ipAddr: 172.16.31.1 - Internal IP Address of target
 #     password: Astr0path - Web UI Password for targer
-#     freq: 10s           - Frequency to poll target at
+#     freq: 10            - Rate to poll target at in seconds
 
 routers:
   - Name: Three
     ipAddr: 172.16.31.1
     password: S3cur3P455w0rd!
-    freq: 10s
+    freq: 10
 ...
