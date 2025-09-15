@@ -8,19 +8,20 @@ logger = logging.getLogger(__name__)
 
 class UMRrouter:
     """
-        Router auth states:
+        Router authState options:
         -1 - Error, not reachable
          0 - Initialised and not connected
-        >0 - Logged in and authorised
+         1 - Logged in and authorised
     """
-    def __init__(self, name, addr, password, freq, SSLVerify):
+    def __init__(self, name, addr, password, freq, SSLVerify, connectOnCreate):
         self.name = name
         self.addr = addr
         self.password = password
         self.freq = freq
         self.SSLVerify = SSLVerify
-        self.authCode = 0
+
         self.session = requests.Session()
+        self.authState = 0
         self.deviceStatus = 0
         self.status = 0
         self.infoLow = 0
@@ -47,6 +48,9 @@ class UMRrouter:
 
         logger.debug("UMRrouter created: "+f"{self.name}")
 
+        if connectOnCreate == True:
+            self.connect()
+
     def __str__(self):
         return json.dumps(self.__dict__)
 
@@ -70,21 +74,18 @@ class UMRrouter:
                 },
                 verify=self.SSLVerify
             )
-
         except ssl.SSLCertVerificationError:
-            logger.error("SSL Certificate unsigned.")
+            logger.error("SSL Certificate unsigned: "+err)
         except httplib.BadStatusLine:
-            logger.error("Bad Status Line received")
-            print(response.request.url)
-            print(response.request.body)
-            print(response.request.headers)
+            logger.error("Bad Status Line received: "+err)
         except OSError as err:
             # print(response.json())
             logger.error(err)
-            self.authCode = -1
+            self.authState = -1
         else:
             auth = "Bearer " + response.json()["result"]["ubus_rpc_session"]
             self.session.headers.update({"authorization": auth})
+            self.authState = 1
             logger.info("Login to "+self.name+" successful, auth id: "+auth)
 
     def uimqttCall(self, method):
@@ -104,7 +105,6 @@ class UMRrouter:
                 },
                 verify=self.SSLVerify
             )
-
         except ssl.SSLCertVerificationError:
             logger.error("SSL Certificate unsigned: "+err)
         except httplib.BadStatusLine:

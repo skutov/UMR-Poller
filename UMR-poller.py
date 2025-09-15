@@ -223,19 +223,21 @@ def main():
             for data in configuration:
                 entries = data['routers']
                 for entry in entries:
-                    pollingTargets.append(UMRrouter(entry['name'],entry['ipAddr'],entry['password'],entry['freq'],entry['SSLVerify']))
-    debug_requests_on()
+                    pollingTargets.append(UMRrouter(entry['name'],entry['ipAddr'],entry['password'],entry['freq'],entry['SSLVerify'],True))
+
     #while 1:
     for target in pollingTargets:
-        if target.authCode == 0:
+        print(target.__dict__)
+        if target.authState == 0:
             logger.info('Target '+target.name+' on '+target.addr+' unauthorised, logging in.')
             target.connect()
+
+        if target.authState != 0:
             target.getDeviceStatus()
             target.getStatus()
             target.InfoLowDump()
             target.InfoHighDump()
             target.InfoClientDump()
-            target.ShadowReadLocal()
 
 
 
