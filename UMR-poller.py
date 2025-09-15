@@ -16,6 +16,8 @@ import argparse, logging, os, sys
 import json, requests, yaml, ssl
 from pathlib import Path
 from UMRtools import UMRrouter
+import contextlib
+from http.client import HTTPConnection
 
 def exc_hndlr(etype, value, tb):
     logger.critical(
@@ -184,6 +186,22 @@ def logger_init(logname=os.path.basename(__file__)[:-3]):
 
         logger.addHandler(syslog)
 
+def debug_requests_on():
+    '''Switches on logging of the requests module.'''
+    HTTPConnection.debuglevel = 1
+
+    requests_log = logging.getLogger("requests.packages.urllib3")
+    requests_log.setLevel(logging.DEBUG)
+    requests_log.propagate = True
+
+def debug_requests_off():
+    '''Switches off logging of the requests module, might be some side-effects'''
+    HTTPConnection.debuglevel = 0
+
+    requests_log = logging.getLogger("requests.packages.urllib3")
+    requests_log.setLevel(logging.WARNING)
+    requests_log.propagate = False
+
 def main():
     logger.info('UMR Poller started.')
     logger.debug('Arguments: ')
@@ -206,12 +224,13 @@ def main():
                 entries = data['routers']
                 for entry in entries:
                     pollingTargets.append(UMRrouter(entry['name'],entry['ipAddr'],entry['password'],entry['freq'],entry['SSLVerify']))
-
+    debug_requests_on()
     #while 1:
     for target in pollingTargets:
         if target.authCode == 0:
             logger.info('Target '+target.name+' on '+target.addr+' unauthorised, logging in.')
             target.connect()
+            target.getDeviceStatus()
 
 
 if __name__ == "__main__":
