@@ -21,6 +21,11 @@ class UMRrouter:
         self.SSLVerify = SSLVerify
         self.authCode = 0
         self.session = requests.Session()
+        self.deviceStatus = 0
+        self.status = 0
+        self.infoLow = 0
+        self.infoHigh = 0
+        self.infoClient = 0
 
         self.session.headers.update(
             {
@@ -82,7 +87,7 @@ class UMRrouter:
             self.session.headers.update({"authorization": auth})
             logger.info("Login to "+self.name+" successful, auth id: "+auth)
 
-    def getDeviceStatus(self):
+    def uimqttCall(self, method):
         try:
             response = self.session.post(
                 "https://"+self.addr+"/ubus/call/uimqtt",
@@ -93,7 +98,7 @@ class UMRrouter:
                 },
                 json={
                     "jsonrpc":"2.0",
-                    "method":"GetDeviceStatus",
+                    "method": method,
                     "params":{
                     }
                 },
@@ -101,15 +106,38 @@ class UMRrouter:
             )
 
         except ssl.SSLCertVerificationError:
-            logger.error("SSL Certificate unsigned.")
+            logger.error("SSL Certificate unsigned: "+err)
         except httplib.BadStatusLine:
-            logger.error("Bad Status Line received")
-            print(response.request.url)
-            print(response.request.body)
-            print(response.request.headers)
+            logger.error("Bad Status Line received: "+err)
         except OSError as err:
             # print(response.json())
             logger.error(err)
             self.authCode = -1
         else:
-            logger.info("GetDeviceStatus to "+self.name+" successful, result:"+f"{response.json()}")
+            logger.debug(method+" request to "+self.name+" successful, result:"+f"{response.json()}")
+            return response.json()
+
+    def getDeviceStatus(self):
+        self.deviceStatus = self.uimqttCall("GetDeviceStatus")
+        print("New Device Status: ")
+        print(self.deviceStatus)
+
+    def getStatus(self):
+        self.deviceStatus = self.uimqttCall("GetStatus")
+        print("New Status: ")
+        print(self.status)
+
+    def InfoLowDump(self):
+        self.deviceStatus = self.uimqttCall("InfoLowDump")
+        print("New Info Low Dump: ")
+        print(self.infoLow)
+
+    def InfoHighDump(self):
+        self.deviceStatus = self.uimqttCall("InfoHighDump")
+        print("New Info High Dump: ")
+        print(self.infoHigh)
+
+    def InfoClientDump(self):
+        self.deviceStatus = self.uimqttCall("InfoClientDump")
+        print("New Info Client Dump: ")
+        print(self.infoClient)

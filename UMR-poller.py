@@ -231,6 +231,12 @@ def main():
             logger.info('Target '+target.name+' on '+target.addr+' unauthorised, logging in.')
             target.connect()
             target.getDeviceStatus()
+            target.getStatus()
+            target.InfoLowDump()
+            target.InfoHighDump()
+            target.InfoClientDump()
+            target.ShadowReadLocal()
+
 
 
 if __name__ == "__main__":
