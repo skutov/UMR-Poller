@@ -31,18 +31,10 @@ class UMRrouter:
         self.session.headers.update(
             {
                 "Host": self.addr,
-                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:140.0) Gecko/20100101 Firefox/140.0",
                 "Accept": "*/*",
-                "Accept-Language": "en-GB,en;q=0.5",
-                "Accept-Encoding": "gzip, deflate, br, zstd",
                 "content-type": "application/json; charset=utf-8",
                 "Origin": f"https://{self.addr}",
-                "DNT": "1",
-                "Connection": "keep-alive",
-                "Sec-Fetch-Dest": "empty",
-                "Sec-Fetch-Mode": "cors",
-                "Sec-Fetch-Site": "same-origin",
-                "Priority": "u=4",
+                "Connection": "keep-alive"
             }
         )
 
@@ -83,10 +75,15 @@ class UMRrouter:
             logger.error(err)
             self.authState = -1
         else:
-            auth = "Bearer " + response.json()["result"]["ubus_rpc_session"]
-            self.session.headers.update({"authorization": auth})
-            self.authState = 1
-            logger.info("Login to "+self.name+" successful, auth id: "+auth)
+            logger.debug(response.json())
+            if 'result' in response.json():
+                auth = "Bearer " + response.json()["result"]["ubus_rpc_session"]
+                self.session.headers.update({"authorization": auth})
+                self.authState = 1
+                logger.info("Login to "+self.name+" successful, auth id: "+auth)
+            else:
+                self.authState = -1
+                logger.error("Login to "+self.name+" failed, error: "+f'{response.json()["error"]}')
 
     def uimqttCall(self, method):
         try:
@@ -107,37 +104,41 @@ class UMRrouter:
             )
         except ssl.SSLCertVerificationError:
             logger.error("SSL Certificate unsigned: "+err)
+            return 0
         except httplib.BadStatusLine:
             logger.error("Bad Status Line received: "+err)
+            return 0
         except OSError as err:
             # print(response.json())
             logger.error(err)
             self.authCode = -1
+            return 0
         else:
-            logger.debug(method+" request to "+self.name+" successful, result:"+f"{response.json()}")
-            return response.json()
+            output = response.json()
+            logger.debug(method+" request to "+self.name+" successful, result:"+f"{output['result']}")
+            return output['result']
 
     def getDeviceStatus(self):
-        self.deviceStatus = self.uimqttCall("GetDeviceStatus")
-        print("New Device Status: ")
-        print(self.deviceStatus)
+        newDeviceStatus = self.uimqttCall("GetDeviceStatus")
+        if newDeviceStatus != 0:
+            self.deviceStatus = newDeviceStatus
 
     def getStatus(self):
-        self.deviceStatus = self.uimqttCall("GetStatus")
-        print("New Status: ")
-        print(self.status)
+        newStatus = self.uimqttCall("GetStatus")
+        if newStatus != 0:
+            self.status = newStatus
 
     def InfoLowDump(self):
-        self.deviceStatus = self.uimqttCall("InfoLowDump")
-        print("New Info Low Dump: ")
-        print(self.infoLow)
+        newInfoLow = self.uimqttCall("InfoLowDump")
+        if newInfoLow != 0:
+            self.infoLow = newInfoLow
 
     def InfoHighDump(self):
-        self.deviceStatus = self.uimqttCall("InfoHighDump")
-        print("New Info High Dump: ")
-        print(self.infoHigh)
+        newInfoHigh = self.uimqttCall("InfoHighDump")
+        if newInfoHigh != 0:
+            self.infoHigh = newInfoHigh
 
     def InfoClientDump(self):
-        self.deviceStatus = self.uimqttCall("InfoClientDump")
-        print("New Info Client Dump: ")
-        print(self.infoClient)
+        newInfoClient = self.uimqttCall("InfoClientDump")
+        if newInfoClient != 0:
+            self.infoClient = newInfoClient
