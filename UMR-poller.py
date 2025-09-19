@@ -292,7 +292,6 @@ def main():
                 logItems.append('n/a')
 
             for target in pollingTargets:
-                print(target.__dict__)
                 if target.authState == 0:
                     logger.info('Target '+target.name+' on '+target.addr+' unauthorised, logging in.')
                     target.connect()
@@ -325,7 +324,6 @@ def main():
                     logItems.append('n/a')
                     logItems.append('n/a')
 
-
             csvlogger.logData(logItems)
             sleep(10)
 
@@ -335,7 +333,6 @@ def main():
     for target in pollingTargets:
         target.close()
 
-    csvlogger.shutdown()
     logger.shutdown()
 
 if __name__ == "__main__":
