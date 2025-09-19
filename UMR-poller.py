@@ -18,6 +18,9 @@ from pathlib import Path
 from UMRtools import UMRrouter
 import contextlib
 from http.client import HTTPConnection
+from csv_logger import CsvLogger
+from time import sleep
+
 
 def exc_hndlr(etype, value, tb):
     logger.critical(
@@ -94,6 +97,13 @@ def parse_args():
         type=str,
         default='./config.yml',
         help='set config file, default is ./config.yml')
+    parser.add_argument(
+        '--output',
+        nargs='?',
+        const=1,
+        type=str,
+        default='./output/output.csv',
+        help='set output file, default is ./output/output.csv')
 
     return parser.parse_known_args()
 
@@ -225,21 +235,68 @@ def main():
                 for entry in entries:
                     pollingTargets.append(UMRrouter(entry['name'],entry['ipAddr'],entry['password'],entry['freq'],entry['SSLVerify'],True))
 
+
+    outFile = args.output
+    delimiter = ','
+    level = logging.INFO
+    custom_additional_levels = ['logData']
+    fmt = f'%(asctime)s{delimiter}%(message)s'
+    datefmt = '%Y-%m-%dT%H:%M:%S'
+    max_size = 1048576  # 1 Mebibyte
+    max_files = 4  # 4 rotating files
+    header = ['date', 'test']
+
+    for target in pollingTargets:
+        header.append(target.name+'.InfoHighDump.signal_level')
+        header.append(target.name+'.InfoHighDump.latency_max_ms')
+        header.append(target.name+'.InfoHighDump.latency_packet_loss_count')
+        header.append(target.name+'.InfoHighDump.lte_state')
+        header.append(target.name+'.InfoHighDump.rssi')
+        header.append(target.name+'.InfoHighDump.rsrq')
+        header.append(target.name+'.InfoHighDump.rsrp')
+        header.append(target.name+'.InfoHighDump.rx_channel')
+        header.append(target.name+'.InfoHighDump.tx_channel')
+        header.append(target.name+'.InfoHighDump.band')
+
+    # Creat logger with csv rotating handler
+    csvlogger = CsvLogger(filename=outFile,
+                          delimiter=delimiter,
+                          level=logging.INFO,
+                          add_level_names=custom_additional_levels,
+                          add_level_nums=None,
+                          fmt=fmt,
+                          datefmt=datefmt,
+                          max_size=max_size,
+                          max_files=max_files,
+                          header=header)
+
     #while 1:
+    logItems = ['test']
     for target in pollingTargets:
         print(target.__dict__)
         if target.authState == 0:
             logger.info('Target '+target.name+' on '+target.addr+' unauthorised, logging in.')
             target.connect()
 
-        if target.authState != 0:
-            target.getDeviceStatus()
-            target.getStatus()
-            target.InfoLowDump()
+        if target.authState > 0:
+            # target.getDeviceStatus()
+            # target.getStatus()
+            # target.InfoLowDump()
             target.InfoHighDump()
-            target.InfoClientDump()
+            # target.InfoClientDump()
+            logItems.append(target.infoHigh['signal_level'])
+            logItems.append(target.infoHigh['latency_max_ms'])
+            logItems.append(target.infoHigh['latency_packet_loss_count'])
+            logItems.append(target.infoHigh['lte_state'])
+            logItems.append(target.infoHigh['rssi'])
+            logItems.append(target.infoHigh['rsrq'])
+            logItems.append(target.infoHigh['rsrp'])
+            logItems.append(target.infoHigh['rx_channel'])
+            logItems.append(target.infoHigh['tx_channel'])
+            logItems.append(target.infoHigh['band'])
 
-
+    print(logItems)
+    csvlogger.logData(logItems)
 
 if __name__ == "__main__":
     args, unknown_args = parse_args()
