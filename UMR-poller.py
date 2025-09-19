@@ -129,6 +129,7 @@ def logger_init(logname=os.path.basename(__file__)[:-3]):
         os.makedirs(logdir)
 
     logging.basicConfig(filename=app_log, level=loglvl, format=fmt)
+    logging.captureWarnings(True)
 
     global logger
     logger = logging.getLogger()
