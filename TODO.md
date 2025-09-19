@@ -18,3 +18,4 @@ Roadmap of features I plan to implement for this program.
 - [X] Handle wrong password errors
 - [x] Get login to UMR working
 - [x] Implement various status messages from UMR
+- [X] Extract needed data from responses

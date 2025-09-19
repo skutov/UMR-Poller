@@ -15,12 +15,13 @@ Description  : %HERE%
 import argparse, logging, os, sys
 import json, requests, yaml, ssl
 from pathlib import Path
-from UMRtools import UMRrouter
 import contextlib
 from http.client import HTTPConnection
 from csv_logger import CsvLogger
 from time import sleep
+import gpsd
 
+from UMRtools import UMRrouter
 
 def exc_hndlr(etype, value, tb):
     logger.critical(
@@ -244,7 +245,7 @@ def main():
     datefmt = '%Y-%m-%dT%H:%M:%S'
     max_size = 1048576  # 1 Mebibyte
     max_files = 4  # 4 rotating files
-    header = ['date', 'test']
+    header = ['Systemdate', 'GPSdate', 'Lat', 'Long', 'HSpeed']
 
     for target in pollingTargets:
         header.append(target.name+'.InfoHighDump.signal_level')
@@ -270,33 +271,72 @@ def main():
                           max_files=max_files,
                           header=header)
 
-    #while 1:
-    logItems = ['test']
+    gpsd.connect()
+
+    try:
+        while 1:
+            logItems = []
+
+            location = gpsd.get_current()
+
+            # print time, if we have it
+            if location.mode >= 2:
+                logItems.append(location.time)
+                logItems.append("%.6f" % (location.lat))
+                logItems.append("%.6f" % (location.lon))
+                logItems.append("%.2f" % (location.hspeed))
+            else:
+                logItems.append('n/a')
+                logItems.append('n/a')
+                logItems.append('n/a')
+                logItems.append('n/a')
+
+            for target in pollingTargets:
+                print(target.__dict__)
+                if target.authState == 0:
+                    logger.info('Target '+target.name+' on '+target.addr+' unauthorised, logging in.')
+                    target.connect()
+
+                if target.authState > 0:
+                    # target.getDeviceStatus()
+                    # target.getStatus()
+                    # target.InfoLowDump()
+                    target.InfoHighDump()
+                    # target.InfoClientDump()
+                    logItems.append(target.infoHigh['signal_level'])
+                    logItems.append(target.infoHigh['latency_max_ms'])
+                    logItems.append(target.infoHigh['latency_packet_loss_count'])
+                    logItems.append(target.infoHigh['lte_state'])
+                    logItems.append(target.infoHigh['rssi'])
+                    logItems.append(target.infoHigh['rsrq'])
+                    logItems.append(target.infoHigh['rsrp'])
+                    logItems.append(target.infoHigh['rx_channel'])
+                    logItems.append(target.infoHigh['tx_channel'])
+                    logItems.append(target.infoHigh['band'])
+                else:
+                    logItems.append('n/a')
+                    logItems.append('n/a')
+                    logItems.append('n/a')
+                    logItems.append('n/a')
+                    logItems.append('n/a')
+                    logItems.append('n/a')
+                    logItems.append('n/a')
+                    logItems.append('n/a')
+                    logItems.append('n/a')
+                    logItems.append('n/a')
+
+
+            csvlogger.logData(logItems)
+
+    except KeyboardInterrupt:
+        logger.warning("Interrupt received, closing.")
+
     for target in pollingTargets:
-        print(target.__dict__)
-        if target.authState == 0:
-            logger.info('Target '+target.name+' on '+target.addr+' unauthorised, logging in.')
-            target.connect()
+        target.close()
 
-        if target.authState > 0:
-            # target.getDeviceStatus()
-            # target.getStatus()
-            # target.InfoLowDump()
-            target.InfoHighDump()
-            # target.InfoClientDump()
-            logItems.append(target.infoHigh['signal_level'])
-            logItems.append(target.infoHigh['latency_max_ms'])
-            logItems.append(target.infoHigh['latency_packet_loss_count'])
-            logItems.append(target.infoHigh['lte_state'])
-            logItems.append(target.infoHigh['rssi'])
-            logItems.append(target.infoHigh['rsrq'])
-            logItems.append(target.infoHigh['rsrp'])
-            logItems.append(target.infoHigh['rx_channel'])
-            logItems.append(target.infoHigh['tx_channel'])
-            logItems.append(target.infoHigh['band'])
-
-    print(logItems)
-    csvlogger.logData(logItems)
+    session.close()
+    csvlogger.shutdown()
+    logger.shutdown()
 
 if __name__ == "__main__":
     args, unknown_args = parse_args()

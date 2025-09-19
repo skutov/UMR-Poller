@@ -46,6 +46,9 @@ class UMRrouter:
     def __str__(self):
         return json.dumps(self.__dict__)
 
+    def close(self):
+        self.session.close()
+
     def connect(self):
         try:
             response = self.session.post(
