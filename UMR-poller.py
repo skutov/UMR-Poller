@@ -327,6 +327,7 @@ def main():
 
 
             csvlogger.logData(logItems)
+            sleep(10)
 
     except KeyboardInterrupt:
         logger.warning("Interrupt received, closing.")
@@ -334,7 +335,6 @@ def main():
     for target in pollingTargets:
         target.close()
 
-    session.close()
     csvlogger.shutdown()
     logger.shutdown()
 
