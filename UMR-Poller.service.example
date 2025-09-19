@@ -1,0 +1,11 @@
+[Unit]
+Description=UMR-Poller to log UMR router 4g signal levels
+
+[Service]
+Restart=always
+User=$USERNAME
+WorkingDirectory=$WORKINGDIRECTORY/UMR-Poller
+ExecStart=/usr/bin/python3 $WORKINGDIRECTORY//UMR-Poller/UMR-poller.py
+
+[Install]
+WantedBy=multi-user.target

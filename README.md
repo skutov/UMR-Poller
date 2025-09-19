@@ -19,6 +19,8 @@ This is created as a tool to assist with troubleshooting LTE signal levels on mo
 * Install dependencies `pip3 install csv_logger gpsd-py3`
 * Clone repository into desired directory and `chmox +x UMR-Poller.py`
 * Create config.yml and enter configuration details for target routers (see `config.yml.example`)
+* Install and configure `gpsd` to work with your adapter.
+* If you wish to install as a service an example systemd service file is included, to install, add the working directory for this script to the service file, then place a copy in `/etc/systemd/system/`, finally run `systemctl enable UMR-Poller` to enable the service and `systemctl start UMR-Poller` to start it.
 
 ### Executing program
 
@@ -48,6 +50,9 @@ This project is licensed under the Mozilla Public License Version 2.0 License - 
 
 ## Acknowledgments
 
-* [Stack Overflow](https://stackoverflow.com/questions)
+Thanks for the following for making their work available for me to steal and use in this project.
+
 * [har2requests](https://pypi.org/project/har2requests/)
 * [Python Template](https://gist.github.com/MstWntd/646429e25d8f5fa713792e716dcd9de1)
+* [gpsd-py3](https://github.com/MartijnBraam/gpsd-py3)
+* [csv-logger](https://github.com/james-e-morris/csv-logger)

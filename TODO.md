@@ -10,7 +10,6 @@ Roadmap of features I plan to implement for this program.
 
 - [ ] Handle re-logging in should auth error occurr
 - [ ] Handle error states
-- [ ] Add GPS integration for location tracking
 
 ### Done ✓
 
@@ -18,3 +17,4 @@ Roadmap of features I plan to implement for this program.
 - [x] Get login to UMR working
 - [x] Implement various status messages from UMR
 - [X] Extract needed data from responses
+- [X] Add GPS integration for location tracking
