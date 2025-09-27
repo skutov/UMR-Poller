@@ -57,6 +57,13 @@ def parse_args():
         default=False,
         help='Debug Mode')
     parser.add_argument(
+        '--sslWarnDisable',
+        nargs='?',
+        const=1,
+        type=_str2bool,
+        default=False,
+        help='Disable SSL Certificate warnings')
+    parser.add_argument(
         '--cprofile',
         nargs='?',
         const=1,
@@ -236,7 +243,12 @@ def main():
                 entries = data['routers']
                 for entry in entries:
                     pollingTargets.append(UMRrouter(entry['name'],entry['ipAddr'],entry['password'],entry['freq'],entry['SSLVerify'],True))
+                entries = data['global']
+                if "sslWarnDisable" in entries:
+                    args.sslWarnDisable = True
 
+    if args.sslWarnDisable:
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)    
 
     outFile = args.output
     delimiter = ','
