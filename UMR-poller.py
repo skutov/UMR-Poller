@@ -248,6 +248,7 @@ def main():
                     args.sslWarnDisable = True
 
     if args.sslWarnDisable:
+        logger.info('sslWarnDisable set to True, disabling InsecureRequestWarning')
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)    
 
     outFile = args.output
