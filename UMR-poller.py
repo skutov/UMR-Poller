@@ -226,6 +226,7 @@ def main():
     logger.debug('Arguments: ')
     logger.debug(args)
     configFile = Path(args.config)
+    sslWarnDisable = args.sslWarnDisable
 
     global pollingTargets
     pollingTargets = []
@@ -243,13 +244,19 @@ def main():
                 entries = data['routers']
                 for entry in entries:
                     pollingTargets.append(UMRrouter(entry['name'],entry['ipAddr'],entry['password'],entry['freq'],entry['SSLVerify'],True))
-                entries = data['global']
-                if "sslWarnDisable" in entries:
-                    args.sslWarnDisable = True
+                options = data['global']
+                print(options)
+                if "sslWarnDisable" in options:
+                    sslWarnDisable = options['sslWarnDisable'] 
 
-    if args.sslWarnDisable:
+    if sslWarnDisable:
         logger.info('sslWarnDisable set to True, disabling InsecureRequestWarning')
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)    
+        try:
+            from requests.packages.urllib3.exceptions import InsecureRequestWarning
+            from requests.packages.urllib3 import disable_warnings
+            disable_warnings(InsecureRequestWarning)
+        except ImportError:
+            pass
 
     outFile = args.output
     delimiter = ','

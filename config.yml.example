@@ -6,7 +6,7 @@
 #     password: Astr0path - Web UI Password for targer
 #     freq: 10            - Rate to poll target at in seconds
 global:
-  - sslWarnDisable: False # Change to True to disable InsecureRequestWarning from urllib3
+  sslWarnDisable: False # Change to True to disable InsecureRequestWarning from urllib3
 routers:
   - Name: Three
     ipAddr: 172.16.31.1
