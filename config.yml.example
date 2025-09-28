@@ -9,6 +9,7 @@ global:
   sslWarnDisable: False # Change to True to disable InsecureRequestWarning from urllib3
   gpsdEnable: True # Change to false to disable gpsd connection
   maxWorkerThreads: 3 # Set maximum number of threads for polling UMR targets, default 3
+  schedule: 15 # Seconds to wait between each polling attempt
 routers:
   - Name: Three
     ipAddr: 172.16.31.1

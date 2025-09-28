@@ -16,7 +16,7 @@ This is created as a tool to assist with troubleshooting LTE signal levels on mo
 
 ### Installing
 
-* Install dependencies `pip3 install csv_logger gpsd-py3`
+* Install dependencies `pip3 install csv_logger gpsd-py3 schedule`
 * Clone repository into desired directory and `chmox +x UMR-Poller.py`
 * Create config.yml and enter configuration details for target routers (see `config.yml.example`)
 * Install and configure `gpsd` to work with your adapter.
@@ -56,3 +56,4 @@ Thanks for the following for making their work available for me to steal and use
 * [Python Template](https://gist.github.com/MstWntd/646429e25d8f5fa713792e716dcd9de1)
 * [gpsd-py3](https://github.com/MartijnBraam/gpsd-py3)
 * [csv-logger](https://github.com/james-e-morris/csv-logger)
+* [schedule](https://pypi.org/project/schedule/)

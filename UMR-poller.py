@@ -14,6 +14,7 @@ Description  : %HERE%
 
 import argparse, logging, os, sys
 import json, requests, yaml, ssl
+import schedule, threading
 from pathlib import Path
 import contextlib
 from http.client import HTTPConnection
@@ -252,12 +253,51 @@ def pollTarget(target):
     if target.authState > 0:
         target.InfoHighDump()
 
+def iterateLoop():
+    logItems = []
+
+    with ThreadPoolExecutor(max_workers=3) as e:
+        futures = []
+        for target in pollingTargets:
+            futures.append(e.submit(pollTarget, target))
+
+    if gpsdEnable:
+        location = gpsd.get_current()
+
+        # print time, if we have it
+        if location.mode >= 2:
+            logItems.append(location.time)
+            logItems.append("%.6f" % (location.lat))
+            logItems.append("%.6f" % (location.lon))
+            logItems.append("%.2f" % (location.hspeed))
+        else:
+            logItems.append('n/a')
+            logItems.append('n/a')
+            logItems.append('n/a')
+            logItems.append('n/a')
+
+    for target in pollingTargets:
+            logItemsFromTarget(target, logItems)
+
+    logger.debug(f'New output entry: {logItems}')
+    csvlogger.logData(logItems)
+
+def run_threaded(job_func):
+    job_thread = threading.Thread(target=job_func)
+    job_thread.start()
+
 def main():
     logger.info('UMR Poller started.')
     logger.debug('Arguments: ')
     logger.debug(args)
     configFile = Path(args.config)
     sslWarnDisable = args.sslWarnDisable
+    global gpsdEnable
+    gpsdEnable = False
+    global maxWorkerThreads
+    maxWorkerThreads = 3
+    global scheduleDelay
+    scheduleDelay = 15
 
     global pollingTargets
     pollingTargets = []
@@ -282,8 +322,8 @@ def main():
                     gpsdEnable = globalOptions['gpsdEnable']
                 if "maxWorkerThreads" in globalOptions:
                     maxWorkerThreads = globalOptions['maxWorkerThreads']
-                else:
-                    maxWorkerThreads = 3
+                if "schedule" in globalOptions:
+                    scheduleDelay = globalOptions['schedule']
 
     if sslWarnDisable:
         logger.info('sslWarnDisable set to True, disabling InsecureRequestWarning')
@@ -326,6 +366,7 @@ def main():
         header.append(target.name+'.InfoHighDump.band')
 
     # Creat logger with csv rotating handler
+    global csvlogger
     csvlogger = CsvLogger(filename=outFile,
                           delimiter=delimiter,
                           level=logging.INFO,
@@ -338,43 +379,17 @@ def main():
                           header=header)
 
     try:
+        schedule.every(scheduleDelay).seconds.do(run_threaded, iterateLoop)
+
         while 1:
-            logItems = []
-
-            if gpsdEnable:
-                location = gpsd.get_current()
-
-                # print time, if we have it
-                if location.mode >= 2:
-                    logItems.append(location.time)
-                    logItems.append("%.6f" % (location.lat))
-                    logItems.append("%.6f" % (location.lon))
-                    logItems.append("%.2f" % (location.hspeed))
-                else:
-                    logItems.append('n/a')
-                    logItems.append('n/a')
-                    logItems.append('n/a')
-                    logItems.append('n/a')
-
-            with ThreadPoolExecutor(max_workers=3) as e:
-                futures = []
-                for target in pollingTargets:
-                    futures.append(e.submit(pollTarget, target))
-
-            for target in pollingTargets:
-                    logItemsFromTarget(target, logItems)
-
-            logger.debug(f'New output entry: {logItems}')
-            csvlogger.logData(logItems)
-            sleep(10)
+            schedule.run_pending()
+            sleep(1)
 
     except KeyboardInterrupt:
         logger.warning("Interrupt received, closing.")
 
     for target in pollingTargets:
         target.close()
-
-    logger.shutdown()
 
 if __name__ == "__main__":
     args, unknown_args = parse_args()
