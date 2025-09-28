@@ -19,7 +19,6 @@ import contextlib
 from http.client import HTTPConnection
 from csv_logger import CsvLogger
 from time import sleep
-import gpsd
 
 from UMRtools import UMRrouter
 
@@ -278,6 +277,7 @@ def main():
     header = ['Systemdate']
 
     if gpsdEnable:
+        import gpsd
         header.append('GPSdate')
         header.append('Lat')
         header.append('Long')
