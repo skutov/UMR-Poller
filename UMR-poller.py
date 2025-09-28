@@ -350,6 +350,7 @@ def main():
         header.append('Lat')
         header.append('Long')
         header.append('HSpeed')
+        global gpsd
         gpsd.connect()
 
 
