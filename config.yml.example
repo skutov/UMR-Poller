@@ -7,6 +7,7 @@
 #     freq: 10            - Rate to poll target at in seconds
 global:
   sslWarnDisable: False # Change to True to disable InsecureRequestWarning from urllib3
+  gpsdEnable: True # Change to false to disable gpsd connection
 routers:
   - Name: Three
     ipAddr: 172.16.31.1

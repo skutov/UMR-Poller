@@ -64,6 +64,13 @@ def parse_args():
         default=False,
         help='Disable SSL Certificate warnings')
     parser.add_argument(
+        '--gpsdEnable',
+        nargs='?',
+        const=1,
+        type=_str2bool,
+        default=False,
+        help='Enable gpsd location logging')
+    parser.add_argument(
         '--cprofile',
         nargs='?',
         const=1,
@@ -247,7 +254,9 @@ def main():
                 options = data['global']
                 print(options)
                 if "sslWarnDisable" in options:
-                    sslWarnDisable = options['sslWarnDisable'] 
+                    sslWarnDisable = options['sslWarnDisable']
+                if "gpsdEnable" in options:
+                    gpsdEnable = options['gpsdEnable']
 
     if sslWarnDisable:
         logger.info('sslWarnDisable set to True, disabling InsecureRequestWarning')
@@ -266,7 +275,15 @@ def main():
     datefmt = '%Y-%m-%dT%H:%M:%S'
     max_size = 1048576  # 1 Mebibyte
     max_files = 4  # 4 rotating files
-    header = ['Systemdate', 'GPSdate', 'Lat', 'Long', 'HSpeed']
+    header = ['Systemdate']
+
+    if gpsdEnable:
+        header.append('GPSdate')
+        header.append('Lat')
+        header.append('Long')
+        header.append('HSpeed')
+        gpsd.connect()
+
 
     for target in pollingTargets:
         header.append(target.name+'.InfoHighDump.signal_level')
@@ -292,25 +309,24 @@ def main():
                           max_files=max_files,
                           header=header)
 
-    gpsd.connect()
-
     try:
         while 1:
             logItems = []
 
-            location = gpsd.get_current()
+            if gpsdEnable:
+                location = gpsd.get_current()
 
-            # print time, if we have it
-            if location.mode >= 2:
-                logItems.append(location.time)
-                logItems.append("%.6f" % (location.lat))
-                logItems.append("%.6f" % (location.lon))
-                logItems.append("%.2f" % (location.hspeed))
-            else:
-                logItems.append('n/a')
-                logItems.append('n/a')
-                logItems.append('n/a')
-                logItems.append('n/a')
+                # print time, if we have it
+                if location.mode >= 2:
+                    logItems.append(location.time)
+                    logItems.append("%.6f" % (location.lat))
+                    logItems.append("%.6f" % (location.lon))
+                    logItems.append("%.2f" % (location.hspeed))
+                else:
+                    logItems.append('n/a')
+                    logItems.append('n/a')
+                    logItems.append('n/a')
+                    logItems.append('n/a')
 
             for target in pollingTargets:
                 if target.authState == 0:
