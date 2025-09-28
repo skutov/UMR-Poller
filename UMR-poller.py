@@ -19,6 +19,7 @@ import contextlib
 from http.client import HTTPConnection
 from csv_logger import CsvLogger
 from time import sleep
+from concurrent.futures import ThreadPoolExecutor
 
 from UMRtools import UMRrouter
 
@@ -240,16 +241,16 @@ def logItemsFromTarget(target, logItems):
         logItems.append(target.infoHigh['tx_channel'])
         logItems.append(target.infoHigh['band'])
     else:
-        logItems.append('n/a')
-        logItems.append('n/a')
-        logItems.append('n/a')
-        logItems.append('n/a')
-        logItems.append('n/a')
-        logItems.append('n/a')
-        logItems.append('n/a')
-        logItems.append('n/a')
-        logItems.append('n/a')
-        logItems.append('n/a')
+        for i in range(10):
+            logItems.append('n/a')
+
+def pollTarget(target):
+    if target.authState == 0:
+        logger.info('Target '+target.name+' on '+target.addr+' unauthorised, logging in.')
+        target.connect()
+
+    if target.authState > 0:
+        target.InfoHighDump()
 
 def main():
     logger.info('UMR Poller started.')
@@ -274,12 +275,15 @@ def main():
                 entries = data['routers']
                 for entry in entries:
                     pollingTargets.append(UMRrouter(entry['name'],entry['ipAddr'],entry['password'],entry['freq'],entry['SSLVerify'],True))
-                options = data['global']
-                print(options)
-                if "sslWarnDisable" in options:
-                    sslWarnDisable = options['sslWarnDisable']
-                if "gpsdEnable" in options:
-                    gpsdEnable = options['gpsdEnable']
+                globalOptions = data['global']
+                if "sslWarnDisable" in globalOptions:
+                    sslWarnDisable = globalOptions['sslWarnDisable']
+                if "gpsdEnable" in globalOptions:
+                    gpsdEnable = globalOptions['gpsdEnable']
+                if "maxWorkerThreads" in globalOptions:
+                    maxWorkerThreads = globalOptions['maxWorkerThreads']
+                else:
+                    maxWorkerThreads = 3
 
     if sslWarnDisable:
         logger.info('sslWarnDisable set to True, disabling InsecureRequestWarning')
@@ -352,19 +356,15 @@ def main():
                     logItems.append('n/a')
                     logItems.append('n/a')
 
-            for target in pollingTargets:
-                if target.authState == 0:
-                    logger.info('Target '+target.name+' on '+target.addr+' unauthorised, logging in.')
-                    target.connect()
+            with ThreadPoolExecutor(max_workers=3) as e:
+                futures = []
+                for target in pollingTargets:
+                    futures.append(e.submit(pollTarget, target))
 
-                if target.authState > 0:
-                    # target.getDeviceStatus()
-                    # target.getStatus()
-                    # target.InfoLowDump()
-                    target.InfoHighDump()
-                    # target.InfoClientDump()
+            for target in pollingTargets:
                     logItemsFromTarget(target, logItems)
 
+            logger.debug(f'New output entry: {logItems}')
             csvlogger.logData(logItems)
             sleep(10)
 

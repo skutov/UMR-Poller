@@ -18,3 +18,5 @@ Roadmap of features I plan to implement for this program.
 - [x] Implement various status messages from UMR
 - [X] Extract needed data from responses
 - [X] Add GPS integration for location tracking
+- [X] Add option to disable gpsd connection
+- [X] Add Threading
